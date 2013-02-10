@@ -8,24 +8,39 @@ NodeId="$(cat /etc/nodeid)"
 ## setup gateway IPv4
 # determine gw IP from p2ptable
 getoct () {
-    p2ptbl show $gwiptbl \
-    | cut -f1,2 \
-    | egrep "[0-9]*"$'\t'"$1" \
-    | $2 \
-    | head -n1 \
-    | cut -f1
+	case $1 in
+		free |\
+		ghost|\
+		queen)
+			p2ptbl show $gwiptbl \
+			| cut -f1,2 \
+			| egrep "[0-9]*"$'\t'"$1" \
+			| $2 \
+			| head -n1 \
+			| cut -f1
+		;;
+		owned)
+			p2ptbl show $gwiptbl \
+			| grep "$NodeId" \
+			| cut -f1,2 \
+			| $2 \
+			| head -n1 \
+			| cut -f1
+			;;
+		*)
+		exit 1
+	esac
 }
-# get the lowest free addr
-oct3=$(getoct free "sort -n")
+# get our old IP if possible
+# if we had an IP in the past, log that we use it ;)
+oct3=$(getoct owned "sort -n") && [ -n "$oct3" ] && logger -t fsm "Found old IP, re-using it"
+# get the lowest free addr if we dont previously owned a IP
+[ -z "$oct3" ] && oct3=$(getoct free "sort -n") && [ -n "$oct3" ] && logger -t fsm "Using free IP"
 # no free addrs? -> steal an addr from a random ghost
-if [ -z "$oct3" ]; then
-    oct3=$(getoct ghost "shuf")
-    # no ghost addrs? -> steal an addr from a random queen
-    if [ -z "$oct3" ]; then
-	oct3=$(getoct queen "shuf")
-    fi
-    # TODO: log warning about IPv4 addr space exhaustion
-fi
+[ -z "$oct3" ] && oct3=$(getoct ghost "shuf") && [ -n "$oct3" ] && logger -t fsm "Warning! No free IP's left. Got an IP from a ghost!"
+# no ghost addrs? -> steal an addr from a random queen
+[ -z "$oct3" ] && oct3=$(getoct queen "shuf") && [ -n "$oct3" ] && logger -t fsm "Warning! Address space exhaustion! Stealing IP from random Queen!"
+# Bail out if $oct3 is invalid
 [ -n "$oct3" ]
 net_mesh=$(uci get cloud.cur.net_mesh)
 gwip=$(      ipcalc.sh $net_mesh $(($oct3 * 256 + 1))   1 | grep ^START | cut -f2 -d=)
