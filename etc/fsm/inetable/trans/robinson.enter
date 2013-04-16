@@ -3,21 +3,22 @@ logger -t fsm robinson.enter
 . ../common.sh
 
 # setup random ip
-net=$(     uci get cloud.cur.net_robinson)
-net_fake=$(uci get cloud.cur.net_fake)
+net=$(     uci get network.$interface.net_robinson)
+net_fake=$(uci get network.$interface.net_fake)
 prefix=$(echo $net | cut -f2 -d/)
 
 gen_randip () {
     local r=$((0x$(</dev/urandom tr -dc "0-9a-f"| head -c4)))
-    randip=$(
+    local ip=$(
 	ipcalc.sh $net $((($r % 2**(24 - $prefix) - 1) * 2**8 + 1)) 1 \
 	    | grep ^START | cut -f2 -d=
     )
+	echo $ip
 }
 
-gen_randip
-while ! arping -I br-mesh -D -c 5 -q $randip; do
-    gen_randip
+randip=$(gen_randip)
+while ! arping -I $(get_iface) -D -c 5 -q $randip; do
+    randip=$(gen_randip)
 done
 
 mesh_add_ipv4 $randip 255.0.0.0
@@ -25,11 +26,11 @@ logger -t fsm "Set IPv4: $randip"
 
 # setup dhcp, start fake DNS
 echo "
-set dhcp.mesh=dhcp
-set dhcp.mesh.start=3
-set dhcp.mesh.limit=254
-set dhcp.mesh.leasetime=60
-set dhcp.mesh.interface=mesh
+set dhcp.$interface=dhcp
+set dhcp.$interface.start=3
+set dhcp.$interface.limit=254
+set dhcp.$interface.leasetime=60
+set dhcp.$interface.interface=$interface
 set dhcp.fakedns=domain
 set dhcp.fakedns.ip=$(ipcalc.sh $net_fake 1 0 | grep ^START | cut -f2 -d=)
 set dhcp.fakedns.name='#'

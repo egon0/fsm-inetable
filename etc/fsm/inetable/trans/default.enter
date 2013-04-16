@@ -1,3 +1,4 @@
 #!/bin/sh
 logger -t fsm default.enter
-batctl gw client
+. ../common.sh
+batctl -m $(uci get network.$interface.batman_iface) gw client

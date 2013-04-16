@@ -2,9 +2,6 @@
 logger -t fsm queen.enter
 . ../common.sh
 
-gwiptbl=/tmp/p2ptbl/gwip
-NodeId="$(cat /etc/nodeid)"
-
 ## setup gateway IPv4
 # determine gw IP from p2ptable
 getoct () {
@@ -42,29 +39,28 @@ oct3=$(getoct owned "sort -n") && [ -n "$oct3" ] && logger -t fsm "Found old IP,
 [ -z "$oct3" ] && oct3=$(getoct queen "shuf") && [ -n "$oct3" ] && logger -t fsm "Warning! Address space exhaustion! Stealing IP from random Queen!"
 # Bail out if $oct3 is invalid
 [ -n "$oct3" ]
-net_mesh=$(uci get cloud.cur.net_mesh)
+net_mesh=$(uci get network.$interface.net_mesh)
 gwip=$(      ipcalc.sh $net_mesh $(($oct3 * 256 + 1))   1 | grep ^START | cut -f2 -d=)
 dhcp_start=$(ipcalc.sh $net_mesh $(($oct3 * 256 + 2))   1 | grep ^START | cut -f2 -d=)
 dhcp_end=$(  ipcalc.sh $net_mesh $(($oct3 * 256 + 254)) 1 | grep ^START | cut -f2 -d=)
 
-p2ptbl update $gwiptbl $oct3 "queen\t$NodeId" br-mesh
+p2ptbl update $gwiptbl $oct3 "queen\t$NodeId" $(get_iface)
 
 # activate gw mode
-batctl gw server
+batctl -m $(uci get network.$interface.batman_iface) gw server
 
 # set up gw IP
 mesh_add_ipv4 $gwip 255.255.0.0
-logger -t fsm "Set IPv4: $gwip"
 
 ## setup DHCP
 echo "
-set dhcp.mesh=dhcp
-set dhcp.mesh.start=2
-set dhcp.mesh.limit=254
-set dhcp.mesh.leasetime=$DHCPLeaseTime
-set dhcp.mesh.interface=mesh
-set dhcp.mesh.start_ip=$dhcp_start
-set dhcp.mesh.end_ip=$dhcp_end
+set dhcp.$interface=dhcp
+set dhcp.$interface.start=2
+set dhcp.$interface.limit=254
+set dhcp.$interface.leasetime=$DHCPLeaseTime
+set dhcp.$interface.interface=$interface
+set dhcp.$interface.start_ip=$dhcp_start
+set dhcp.$interface.end_ip=$dhcp_end
 " | uci batch
 /etc/init.d/dnsmasq restart
 
@@ -75,7 +71,7 @@ enable_httpd redirection
 /etc/init.d/uhttpd restart
 
 # fill splash table
-splash_sync "$1"
+splash_sync "queen"
 
 # redirect tcp to local httpd, dns to local ns
 iptables -t nat -F prerouting_inet_unsplashed

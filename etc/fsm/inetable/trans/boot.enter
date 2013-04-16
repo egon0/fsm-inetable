@@ -3,21 +3,8 @@ logger -t fsm boot.enter
 . ../common.sh
 
 # Create counter file
-echo "0" > /tmp/boot_runs
+echo "0" > /tmp/boot_runs_$interface
 
-# Set IP6 stateless ULA now according to RFC using a modified EUI-64 ;) 
-if [ "$(ifconfig br-mesh | grep 'Scope:Global')" == "" ]; then
-	#MacAddr without ":"
-	MacAddr=$(ifconfig eth0 | grep HWaddr | awk '{print $5}' | tr -d "\n" | tr ':' ' ')
-	# split the address in two, add the IPv6 ":" notation and add FF:FE in between e.g. 0123:56FF:FE78:9ABC
-	# then XOR the 6th byte with 0x02 according to RFC to create a modified EUI64 based IPv6 address
-	# e.g. -> 0323:56FF:FE78:9ABC (notice the difference to the MAC address at the start)
-	# Afterwards add the Network from the cloud configuration file and put a "/64" as netmask at the end
-	ByteSix=$(echo $MacAddr | awk '{print $1}')
-	XORByteSix=$(let "RESULT=0x$ByteSix ^ 0x02" ; printf '%x\n' $RESULT)
-	IP6NetworkAddr=$(uci get cloud.cur.net_ip6ula | egrep -o 'f[c-d][:0-9a-f]*' | sed -e 's/:$//')
-	IP6HostAddr="$XORByteSix""$(echo $MacAddr | awk '{print $2":"$3}')""FF:FE""$(echo $MacAddr | awk '{print $4":"$5$6}')"
-	IP6Addr="$IP6NetworkAddr$IP6HostAddr/64"
-	mesh_add_ipv6 "$IP6Addr"
-	logger -t fsm "Set IPv6: $IP6Addr"
-fi
+# Set interface defaults
+mesh_add_defaults
+

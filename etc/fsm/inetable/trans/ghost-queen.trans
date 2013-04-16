@@ -1,15 +1,17 @@
 #!/bin/sh -e
 logger -t fsm ghost-queen.trans
-. ../common_queen.sh
+. ../common.sh
+#Check if our current Oct3 is valid
+[ -n "$CurrentOct3" ]
 
-rm /tmp/ghost_since
+rm /tmp/ghost_since_$interface
 
 # announce our gw again
-batctl gw server
+batctl -m $(uci get network.$interface.batman_iface) gw server
 
 # update status of our gateway ip
 if we_own_our_ip; then
-    p2ptbl update $gwiptbl $oct3 "queen\t$NodeId" br-mesh
+    p2ptbl update $gwiptbl $(current_oct3) "queen\t$NodeId" $(get_iface)
 fi
 
 # TODO: remove traffic redirection

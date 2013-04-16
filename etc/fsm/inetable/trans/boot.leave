@@ -8,12 +8,12 @@ logger -t fsm boot.leave
 # This only is the case when there has been no new 
 # table version received in the boot cycle.
 # Note: This is only the case if the gwip table is empty!
-if [ ! -s /tmp/p2ptbl/gwip ]; then
+if [ ! -s $gwiptbl ]; then
 	for i in $(seq 0 254); do
 		echo -e "$i\t0\tfree"
-	done > /tmp/gwip-init
-	p2ptbl merge /tmp/p2ptbl/gwip /tmp/gwip-init
-	rm /tmp/gwip-init
+	done > /tmp/gwip_init_$interface
+	p2ptbl merge $gwiptbl /tmp/gwip_init_$interface
+	rm /tmp/gwip-init_$interface
 fi
 
 # start service httpd listening on ULA IP6 Address of the mesh interface.

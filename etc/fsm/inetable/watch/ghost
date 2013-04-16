@@ -1,10 +1,11 @@
 #!/bin/sh -e
 . ../common.sh
-. ../common_queen.sh
+#Check if our current Oct3 is valid
+[ -n "$CurrentOct3" ]
 
 # if our GW IP has been taken we must no use it again
 if ! we_own_our_ip; then
-	logger -t fsm "We dont own our IP! Changing ..."
+	logger -t fsm "Interface $interface: We dont own our IP! Changing ..."
     if ! cloud_is_online; then
 	echo robinson
     else
@@ -14,23 +15,23 @@ if ! we_own_our_ip; then
 fi
 
 if test_connectivity internet; then
-	logger -t fsm "Node is online"
+	logger -t fsm "Interface $interface: Node is online"
     echo queen
     exit
 fi
 
-if [ "$1" == "ghost" ]; then
-    GhostTime=$(($(date +%s) - $(cat /tmp/ghost_since)))
+if [ "$SO" == "ghost" ]; then
+    GhostTime=$(($(date +%s) - $(cat /tmp/ghost_since_$interface)))
 else
     GhostTime=0
 fi
 if ! cloud_is_online; then
-	logger -t fsm "Cloud is offline"
+	logger -t fsm "Interface $interface: Cloud is offline"
     echo robinson
 elif [ $GhostTime -ge $DHCPLeaseTime ]; then
-	logger -t fsm "Cloud is online"
+	logger -t fsm "Interface $interface: Cloud is online"
     echo drone
 else
-	logger -t fsm "Cloud is online"
+	logger -t fsm "Interface $interface: Cloud is online"
     echo ghost
 fi

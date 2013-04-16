@@ -1,19 +1,18 @@
 #!/bin/sh -e
 logger -t fsm queen-ghost.trans
-. ../common_queen.sh
-
-# Stop n2n VPN
-/etc/init.d/n2n stop
+. ../common.sh
+#Check if our current Oct3 is valid
+[ -n "$CurrentOct3" ]
 
 # store since when we are a ghost
-date +%s >/tmp/ghost_since
+date +%s >/tmp/ghost_since_$interface
 
 # do not announce gateway anymore
-batctl gw client
+batctl -m $(uci get network.$interface.batman_iface) gw client
 
 # update status of our gateway ip
 if we_own_our_ip; then
-    p2ptbl update $gwiptbl $oct3 "ghost\t$NodeId" br-mesh
+    p2ptbl update $gwiptbl $(current_oct3) "ghost\t$NodeId" $(get_iface)
 fi
 
 # TODO: setup redirection of all traffic to another gateway
