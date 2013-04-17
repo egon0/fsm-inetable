@@ -1,8 +1,16 @@
 #!/bin/sh
 
+get_iface () {
+	local interface=$1
+	local iface=$(uci get network.$interface.ifname)
+	local type=$(uci get network.$interface.type)
+	[ "bridge" = "$type" ] && iface="br-$interface"
+	echo $iface
+}
+
 TestHosts="4.2.2.4 8.8.8.8"
 PingTrials=2
-waniface=`uci get network.wan.ifname`
+IFace=$(get_iface wan)
 
 iftest () {
     ifconfig $1 2>/dev/null | grep -q RUNNING
@@ -22,10 +30,11 @@ pingtest () {
 
 case "$1" in
     internet)
-	IFace=$(uci get network.wan.ifname)
+	iftest $IFace && pingtest $IFace $TestHosts
 	;;
     vpn)
 	IFace=tun0
+	iftest $IFace && pingtest $IFace $TestHosts
 	;;
     *)
 	echo "Usage:
@@ -34,5 +43,5 @@ $0 <internet|vpn>" >&2
 	;;
 esac
 
-iftest $IFace && pingtest $IFace $TestHosts
+#Bail out if something fails
 exit 1
