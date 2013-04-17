@@ -1,6 +1,5 @@
 #!/bin/sh -e
-#Currently using the hbbp interface list
-interfaces=$(uci get hbbp.settings.interfaces)
+interfaces=$(uci get splash.settings.interfaces)
 
 get_iface () {
 	local interface=$1
