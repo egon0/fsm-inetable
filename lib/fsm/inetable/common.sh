@@ -32,7 +32,7 @@ get_iface () {
 
 cloud_is_online () {
     # look for mac addrs in batman gateway list
-    batctl gwl | tail -n-1 | egrep -q '([0-9a-f]{2}:){5}[0-9a-f]{2}'
+	batctl -m $(uci get network.$interface.batman_iface) gwl | tail -n-1 | egrep -q '([0-9a-f]{2}:){5}[0-9a-f]{2}'
 }
 
 mesh_add_defaults() {
@@ -96,14 +96,4 @@ mesh_add_ipv6 () {
 mesh_del_ipv6() {
 	logger -t fsm "Interface: $interface, Action: Remove IPv6"
 	mesh_reset_interface
-}
-
-# enable/disable uhttpd instance in uci config; the parameters are
-# 1. instance name
-enable_httpd () {
-    uci set uhttpd.$1=uhttpd
-}
-
-disable_httpd () {
-    uci set uhttpd.$1=disabled
 }

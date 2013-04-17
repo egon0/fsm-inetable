@@ -43,7 +43,7 @@ net_mesh=$(uci get network.$interface.net_mesh)
 gwip=$(      ipcalc.sh $net_mesh $(($oct3 * 256 + 1))   1 | grep ^START | cut -f2 -d=)
 dhcp_start=$(ipcalc.sh $net_mesh $(($oct3 * 256 + 2))   1 | grep ^START | cut -f2 -d=)
 dhcp_end=$(  ipcalc.sh $net_mesh $(($oct3 * 256 + 254)) 1 | grep ^START | cut -f2 -d=)
-
+real_iface=$(get_iface)
 p2ptbl update $gwiptbl $oct3 "queen\t$NodeId" $(get_iface)
 
 # activate gw mode
@@ -64,18 +64,12 @@ set dhcp.$interface.end_ip=$dhcp_end
 " | uci batch
 /etc/init.d/dnsmasq restart
 
-## set splash
-# start redirection httpd (for splash)
-echo "http://$gwip/cgi-bin/splash.html? /sbin/urlencode" > /tmp/redirection_target
-enable_httpd redirection
-/etc/init.d/uhttpd restart
-
 # fill splash table
 splash_sync "queen"
 
 # redirect tcp to local httpd, dns to local ns
 iptables -t nat -F prerouting_inet_unsplashed
-iptables -t nat -A prerouting_inet_unsplashed -p tcp            -j DNAT --to $gwip:81
-iptables -t nat -A prerouting_inet_unsplashed -p udp --dport 53 -j DNAT --to $gwip:53
+iptables -t nat -A prerouting_inet_unsplashed -i $real_iface -p tcp            -j DNAT --to $gwip:81
+iptables -t nat -A prerouting_inet_unsplashed -i $real_iface -p udp --dport 53 -j DNAT --to $gwip:53
 # TODO: discard any other UDP traffic
 

@@ -17,12 +17,12 @@ gen_randip () {
 }
 
 randip=$(gen_randip)
-while ! arping -I $(get_iface) -D -c 5 -q $randip; do
+real_iface=$(get_iface)
+while ! arping -I $real_iface -D -c 5 -q $randip; do
     randip=$(gen_randip)
 done
 
 mesh_add_ipv4 $randip 255.0.0.0
-logger -t fsm "Set IPv4: $randip"
 
 # setup dhcp, start fake DNS
 echo "
@@ -38,17 +38,12 @@ set dhcp.fakedns.name='#'
 /etc/init.d/dnsmasq restart
 
 # disable batman-adv-mangling with DHCP packets
-batctl gw off
-
-# start redirection httpd
-echo "http://$randip/cgi-bin/splash.html" > /tmp/redirection_target
-enable_httpd redirection
-/etc/init.d/uhttpd restart
+batctl -m $(uci get network.$interface.batman_iface) gw off
 
 # redirect all tcp traffic to local httpd, all dns traffic to local NS
 iptables -t nat -F prerouting_robinson_fake
 iptables -t nat -F prerouting_robinson_inet
-iptables -t nat -A prerouting_robinson_inet -p tcp \
+iptables -t nat -A prerouting_robinson_inet -i $real_iface -p tcp \
     -j DNAT --to-destination $randip:81
-iptables -t nat -A prerouting_robinson_inet -p udp --dport 53 \
+iptables -t nat -A prerouting_robinson_inet -i $real_iface -p udp --dport 53 \
     -j DNAT --to-destination $randip:53

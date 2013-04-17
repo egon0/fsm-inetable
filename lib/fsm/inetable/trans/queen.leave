@@ -25,7 +25,3 @@ for mode in splashed unsplashed; do
     iptables -t nat -F prerouting_inet_$mode
 done
 
-# stop redirection httpd
-disable_httpd redirection
-rm /tmp/redirection_target
-/etc/init.d/uhttpd restart

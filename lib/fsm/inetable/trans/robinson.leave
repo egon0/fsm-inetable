@@ -2,6 +2,7 @@
 logger -t fsm robinson.leave
 . ../common.sh
 
+#Remove IPv4 Addr
 mesh_del_ipv4
 
 # stop DHCP server & fake DNS
@@ -9,10 +10,6 @@ uci delete dhcp.$interface
 uci delete dhcp.fakedns
 /etc/init.d/dnsmasq restart
 
-# stop redirection httpd
-disable_httpd redirection
-rm /tmp/redirection_target
-/etc/init.d/uhttpd restart
 
 # stop redirecting all inet traffic to local httpd/nameserver
 iptables -t nat -F prerouting_robinson_inet
