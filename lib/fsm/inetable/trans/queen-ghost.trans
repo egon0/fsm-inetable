@@ -2,6 +2,7 @@
 logger -t fsm queen-ghost.trans
 . ../common.sh
 #Check if our current Oct3 is valid
+CurrentOct3=$(current_oct3)
 [ -n "$CurrentOct3" ]
 
 # store since when we are a ghost
@@ -12,7 +13,7 @@ batctl -m $(uci get network.$interface.batman_iface) gw client
 
 # update status of our gateway ip
 if we_own_our_ip; then
-    p2ptbl update $gwiptbl $(current_oct3) "ghost\t$NodeId" $(get_iface)
+    p2ptbl update $gwiptbl $CurrentOct3 "ghost\t$NodeId" $(get_iface)
 fi
 
 # TODO: setup redirection of all traffic to another gateway

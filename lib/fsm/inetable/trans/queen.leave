@@ -2,6 +2,7 @@
 logger -t fsm queen.leave
 . ../common.sh
 #Check if our current Oct3 is valid
+CurrentOct3=$(current_oct3)
 [ -n "$CurrentOct3" ]
 
 # do not announce gateway anymore
@@ -12,7 +13,7 @@ mesh_del_ipv4
 
 # release IP in p2ptable (if we still own it)
 if we_own_our_ip; then
-    p2ptbl update $gwiptbl $(current_oct3) free $(get_iface)
+    p2ptbl update $gwiptbl $CurrentOct3 free $(get_iface)
 fi
 
 # disable DHCP

@@ -1,6 +1,7 @@
 #!/bin/sh -e
 . ../common.sh
 #Check if our current Oct3 is valid
+CurrentOct3=$(current_oct3)
 [ -n "$CurrentOct3" ]
 
 # if our GW IP has been taken we must no use it again
