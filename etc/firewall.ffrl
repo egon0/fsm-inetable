@@ -1,43 +1,67 @@
 #!/bin/sh -e
+#Currently using the hbbp interface list
+interfaces=$(uci get hbbp.settings.interfaces)
 
-net_robinson=$(uci get cloud.cur.net_robinson)
-net_fake=$(    uci get cloud.cur.net_fake)
-net_mesh=$(    uci get cloud.cur.net_mesh)
+get_iface () {
+	local interface=$1
+	local iface=$(uci get network.$interface.ifname)
+	local type=$(uci get network.$interface.type)
+	[ "bridge" = "$type" ] && iface="br-$interface"
+	echo $iface
+}
+
+# Wan Interface
+wan_iface=$(get_iface wan)
 
 # flush PREROUTING chains; we catch all packets with the cases
 # detailed below
 iptables -t nat -F PREROUTING
 
-## robinson net
 # create chains for the robinson fake net (depending on the inetable
 # state, this is used to route all TCP traffic to a local web server
 # or relay all traffic to the intended target):
-# - prerouting_robinson_fake: traffic destinated to the fake net
-# - prerouting_robinson_inet: traffic destinated to anything outside
-#   the robinson net
 iptables -t nat -N prerouting_robinson_inet
 iptables -t nat -N prerouting_robinson_fake
-iptables -t nat -A PREROUTING -i br-mesh   -d $net_fake \
-    -j prerouting_robinson_fake
-iptables -t nat -A PREROUTING -i br-mesh ! -d $net_robinson \
-    -j prerouting_robinson_inet
-
-# reject all packets to the robinson fake net that have not been
-# catched by a nat rule in the preceeding chains
-iptables -t filter -I forward -d $net_fake \
-    -j REJECT --reject-with icmp-net-unreachable
 
 ## splash
 # create chains executed for splashed/unsplashed users when trying to
 # reach the internet
-for mode in splashed unsplashed; do
-    iptables -t nat -N prerouting_inet_$mode
-    iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
-	-j prerouting_inet_$mode
-done
+iptables -t nat -N prerouting_inet_splashed
+iptables -t nat -N prerouting_inet_unsplashed
 
-# route everything
-iptables -I FORWARD -j ACCEPT
-iptables -I FORWARD -i br-mesh -d 192.168.0.0/16 -j DROP
-iptables -I FORWARD -i br-mesh -d 172.16.0.0/12 -j DROP
-iptables -I FORWARD -i br-mesh -d 10.0.0.0/8 -j DROP
+
+for interface in $interfaces
+do
+	net_robinson=$(uci get network.$interface.net_robinson)
+	net_fake=$(    uci get network.$interface.net_fake)
+	net_mesh=$(    uci get network.$interface.net_mesh)
+	mesh_iface=$(get_iface $interface)
+
+	## robinson net
+	# - prerouting_robinson_fake: traffic destinated to the fake net
+	# - prerouting_robinson_inet: traffic destinated to anything outside
+	#   the robinson net
+	
+	iptables -t nat -A PREROUTING -i $mesh_iface   -d $net_fake \
+		-j prerouting_robinson_fake
+	iptables -t nat -A PREROUTING -i $mesh_iface ! -d $net_robinson \
+		-j prerouting_robinson_inet
+
+	# reject all packets to the robinson fake net that have not been
+	# catched by a nat rule in the preceeding chains
+	iptables -t filter -I forward -d $net_fake \
+		-j REJECT --reject-with icmp-net-unreachable
+
+	## splash
+	# Add interface to splash chains
+	iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
+			-j prerouting_inet_splashed
+	iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
+			-j prerouting_inet_unsplashed
+
+	# route everything except to private subnets over wan
+	iptables -I FORWARD -j ACCEPT
+	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 192.168.0.0/16 -j DROP
+	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 172.16.0.0/12 -j DROP
+	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 10.0.0.0/8 -j DROP
+done
