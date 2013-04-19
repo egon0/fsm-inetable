@@ -4,8 +4,6 @@ SN=$2
 interface=$3
 [ -n $interface ] 
 
-. /lib/netifd/netifd-proto.sh
-
 gwiptbl=/var/p2ptbl/$interface/gwip
 DHCPLeaseTime=$((12 * 3600))
 NodeId="$(cat /etc/nodeid)"
@@ -16,10 +14,7 @@ we_own_our_ip () {
 }
 
 current_oct3 () {
-	local iface=$(uci get network.$interface.ifname)
-	local type=$(uci get network.$interface.type)
-	[ "bridge" = "$type" ] && iface="br-$interface"
-	local CurrentOct3=$(ifconfig $iface | egrep -o 'inet addr:[0-9.]*'|cut -f3 -d.)
+	local CurrentOct3=$(ifconfig $(get_iface) | egrep -o 'inet addr:[0-9.]*'|cut -f3 -d.)
 	echo $CurrentOct3
 }
 
@@ -35,35 +30,23 @@ cloud_is_online () {
 	batctl -m $(uci get network.$interface.batman_iface) gwl | tail -n-1 | egrep -q '([0-9a-f]{2}:){5}[0-9a-f]{2}'
 }
 
-mesh_add_defaults() {
-	proto_init_update "*" 1
-	proto_set_keep 1
-	#IP6 ULA
-	# Set IP6 stateless ULA now according to RFC using a modified EUI-64 ;) 
-	#MacAddr without ":"
-	MacAddr=$(ifconfig eth0 | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' | tr ':' ' ')
-	# split the address in two, add the IPv6 ":" notation and add FF:FE in between e.g. 0123:56FF:FE78:9ABC
-	# then XOR the 6th byte with 0x02 according to RFC to create a modified EUI64 based IPv6 address
-	# e.g. -> 0323:56FF:FE78:9ABC (notice the difference to the MAC address at the start)
-	# Afterwards add the Network from the cloud configuration file and put a "/64" as netmask at the end
-	ByteSix=$(echo $MacAddr | awk '{print $1}')
-	XORByteSix=$(let "RESULT=0x$ByteSix ^ 0x02" ; printf '%x\n' $RESULT)
-	net_ip6ula=$(uci get network.$interface.net_ip6ula)
-	IP6NetworkAddr=$(echo $net_ip6ula | egrep -o 'f[c-d][:0-9a-f]*' | sed -e 's/:$//')
-	IP6HostAddr="$XORByteSix""$(echo $MacAddr | awk '{print $2":"$3}')""FF:FE""$(echo $MacAddr | awk '{print $4":"$5$6}')"
-	IP6Addr="$IP6NetworkAddr$IP6HostAddr"
-	IP6Netmask="64"
-	proto_add_ipv6_address $IP6Addr $Netmask
-	logger -t fsm "Interface: $interface, Action: Set IPv6-ULA $IP6Addr/$IP6Netmask"
-	proto_send_update "$interface"
-}
-mesh_reset_interface() {
-	logger -t fsm "Interface: $interface, Action: Reset"
-	proto_init_update "*" 0
-	proto_set_keep 0
-	proto_send_update "$interface"
-	sleep 2
-	mesh_add_defaults
+generate_ip6addr() {
+	#If there is no cached ip6 addr yet, we will do so
+	if [ ! -s /tmp/$interface-cached-ip6addr ]; then
+		local MacAddr=$(ifconfig eth0 | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' | tr ':' ' ')
+		# split the address in two, add the IPv6 ":" notation and add FF:FE in between e.g. 0123:56FF:FE78:9ABC
+		# then XOR the 6th byte with 0x02 according to RFC 2373 to create a EUI64 based IPv6 address
+		# e.g. -> 0323:56FF:FE78:9ABC (notice the difference to the MAC address at the start)
+		# Afterwards add the Network from the cloud configuration file and put a "/64" as netmask at the end
+		local ByteSix=$(echo $MacAddr | awk '{print $1}')
+		local XORByteSix=$(let "RESULT=0x$ByteSix ^ 0x02" ; printf '%x\n' $RESULT)
+		local net_ip6ula=$(uci get network.$interface.net_ip6ula)
+		local IP6NetworkAddr=$(echo $net_ip6ula | egrep -o 'f[c-d][:0-9a-f]*' | sed -e 's/:$//')
+		local IP6HostAddr="$XORByteSix""$(echo $MacAddr | awk '{print $2":"$3}')""FF:FE""$(echo $MacAddr | awk '{print $4":"$5$6}')"
+		local IP6Addr="$IP6NetworkAddr$IP6HostAddr"
+		echo $IP6Addr > /tmp/$interface-cached-ip6addr
+	fi
+	echo $(cat /tmp/$interface-cached-ip6addr)
 }
 
 ## add/remove IPv4/IPv6 address from mesh iface
@@ -71,29 +54,40 @@ mesh_reset_interface() {
 # other users (e.g. dnsmasq)
 
 mesh_add_ipv4 () {
-	logger -t fsm "Interface: $interface, Action: Set IPv4 $1/$2"
-	proto_init_update "*" 1
-	proto_set_keep 1
-	proto_add_ipv4_address $1 $2 
-	proto_send_update "$interface"
+	local ip6addr=$(generate_ip6addr)
+	local ip6netmask="64"
+	local ipaddr=$1
+	local netmask=$2
+	logger -t fsm "Interface: $interface, Action: Set IPv4 $ipaddr/$netmask"
+	call_changescript configure $ip6addr $ip6netmask $ipaddr $netmask
 }
 
-#Todo: currently uses reset instead
 mesh_del_ipv4 () {
-	logger -t fsm "Interface: $interface, Action: Remove IPv4"
-	mesh_reset_interface
+	#Just calling mesh_add_ipv6 here ;)
+	mesh_add_ipv6
 }
 
 mesh_add_ipv6 () {
-	logger -t fsm "Interface: $interface, Action: Add IPv6 $1/$2"
-	proto_init_update "*" 1
-	proto_set_keep 1
-	proto_add_ipv6_address $1 $2 
-	proto_send_update "$interface"
+	#Function will always take its IP from the generated functions rather that as function parameters!
+	local ip6addr=$(generate_ip6addr)
+	local ip6netmask="64"
+	logger -t fsm "Interface: $interface, Action: Set IPv6 $ip6addr/$ip6netmask"
+	call_changescript configure $ip6addr $ip6netmask
 }
-
-#Todo: currently uses reset instead
-mesh_del_ipv6() {
-	logger -t fsm "Interface: $interface, Action: Remove IPv6"
-	mesh_reset_interface
+call_changescript () { 
+	local ip6addr=$2
+	local ip6netmask=$3
+	local ipaddr=$4
+	local netmask=$5
+    echo "/lib/netifd/fsm.script" | (
+		exec 2>/tmp/fsm.script.log-"$interface"
+		set -x
+		logger -t debug "$ip6addr $ip6netmask $ipaddr $netmask $INTERFACE"
+		while read cmd; do
+			if [ -x "$cmd" ]; then
+				$cmd $1 $interface $ip6addr $ip6netmask $ipaddr $netmask  666<&-
+				exit $?
+			fi
+		done
+	)
 }

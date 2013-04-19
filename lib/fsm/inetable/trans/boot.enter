@@ -6,5 +6,5 @@ logger -t fsm boot.enter
 echo "0" > /tmp/boot_runs_$interface
 
 # Set interface defaults
-mesh_add_defaults
+mesh_add_ipv6
 
