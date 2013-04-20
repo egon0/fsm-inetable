@@ -60,7 +60,7 @@ do
 
 	# route everything except to private subnets over wan
 	iptables -I FORWARD -j ACCEPT
-	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 192.168.0.0/16 -j DROP
-	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 172.16.0.0/12 -j DROP
-	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 10.0.0.0/8 -j DROP
+	iptables -I FORWARD -i $mesh_iface -d 192.168.0.0/16 -j DROP
+	iptables -I FORWARD -i $mesh_iface -d 172.16.0.0/12 -j DROP
+	iptables -I FORWARD -i $mesh_iface -d 10.0.0.0/8 -j DROP
 done
