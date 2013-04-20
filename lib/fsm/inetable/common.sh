@@ -5,7 +5,7 @@ interface=$3
 [ -n $interface ] 
 
 gwiptbl=/var/p2ptbl/$interface/gwip
-DHCPLeaseTime=$((12 * 3600))
+DHCPLeaseTime="1h"
 NodeId="$(cat /etc/nodeid)"
 
 we_own_our_ip () {
@@ -19,7 +19,7 @@ current_oct3 () {
 }
 
 get_iface () {
-	local iface=$(uci get network.$interface.ifname)
+	local iface=$(uci -q get network.$interface.ifname)
 	local type=$(uci get network.$interface.type)
 	[ "bridge" = "$type" ] && iface="br-$interface"
 	echo $iface
@@ -48,10 +48,6 @@ generate_ip6addr() {
 	fi
 	echo $(cat /tmp/$interface-cached-ip6addr)
 }
-
-## add/remove IPv4/IPv6 address from mesh iface
-# manual update to avoid full ifdown+ifup, but update uci state for
-# other users (e.g. dnsmasq)
 
 mesh_add_ipv4 () {
 	local ip6addr=$(generate_ip6addr)
@@ -90,4 +86,25 @@ call_changescript () {
 			fi
 		done
 	)
+}
+
+mesh_set_dhcp() {
+	local start_ip=$1
+	local end_ip=$2
+	local netmask=$3
+	local 
+	# Remove old DHCP settings
+	sed \
+    -e "/$interface settings/d" \
+    -i "/tmp/dnsmasq.conf"
+	# Write new settings
+	echo "dhcp-range=$(get_iface),$start_ip,$end_ip,$netmask,$DHCPLeaseTime # $interface settings" \
+		>> "/tmp/dnsmasq.conf"
+}
+
+mesh_remove_dhcp() {
+	# Remove old DHCP settings
+	sed \
+    -e "/$interface settings/d" \
+    -i "/tmp/dnsmasq.conf"
 }

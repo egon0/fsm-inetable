@@ -53,19 +53,11 @@ batctl -m $(uci get network.$interface.batman_iface) gw server
 mesh_add_ipv4 $gwip 255.255.0.0
 
 ## setup DHCP
-echo "
-set dhcp.$interface=dhcp
-set dhcp.$interface.start=2
-set dhcp.$interface.limit=254
-set dhcp.$interface.leasetime=$DHCPLeaseTime
-set dhcp.$interface.interface=$interface
-set dhcp.$interface.start_ip=$dhcp_start
-set dhcp.$interface.end_ip=$dhcp_end
-" | uci batch
+mesh_set_dhcp $dhcp_start $dhcp_end 255.255.0.0
 /etc/init.d/dnsmasq restart
 
 # fill splash table
-splash_sync "queen"
+splash_sync
 
 # redirect tcp to local httpd, dns to local ns
 iptables -t nat -F prerouting_inet_unsplashed

@@ -24,17 +24,13 @@ done
 
 mesh_add_ipv4 $randip 255.0.0.0
 
-# setup dhcp, start fake DNS
-echo "
-set dhcp.$interface=dhcp
-set dhcp.$interface.start=3
-set dhcp.$interface.limit=254
-set dhcp.$interface.leasetime=60
-set dhcp.$interface.interface=$interface
-set dhcp.fakedns=domain
-set dhcp.fakedns.ip=$(ipcalc.sh $net_fake 1 0 | grep ^START | cut -f2 -d=)
-set dhcp.fakedns.name='#'
-" | uci batch
+# setup dhcp
+oct123=$(echo $randip | cut -f1,2,3 -d '.' )
+dhcp_start="$oct123".2""
+dhcp_end="$oct123".254""
+mesh_set_dhcp $dhcp_start $dhcp_end 255.0.0.0
+
+/etc/init.d/dnsmasq restart
 /etc/init.d/dnsmasq restart
 
 # disable batman-adv-mangling with DHCP packets

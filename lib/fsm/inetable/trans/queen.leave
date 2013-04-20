@@ -17,7 +17,7 @@ if we_own_our_ip; then
 fi
 
 # disable DHCP
-uci delete dhcp.$interface
+mesh_remove_dhcp
 /etc/init.d/dnsmasq restart
 
 # TODO remove splash iptable

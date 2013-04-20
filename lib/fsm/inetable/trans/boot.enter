@@ -8,3 +8,5 @@ echo "0" > /tmp/boot_runs_$interface
 # Set interface defaults
 mesh_add_ipv6
 
+# Restarting HBBP to make sure it runs correctly
+/etc/init.d/hbbp restart
