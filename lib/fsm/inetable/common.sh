@@ -19,8 +19,8 @@ current_oct3 () {
 }
 
 get_iface () {
-	local iface=$(uci -q get network.$interface.ifname)
-	local type=$(uci get network.$interface.type)
+	local iface=$(uci get network.$interface.ifname)
+	local type=$(uci -q get network.$interface.type)
 	[ "bridge" = "$type" ] && iface="br-$interface"
 	echo $iface
 }
