@@ -13,6 +13,6 @@ if [ ! -s $gwiptbl ]; then
 		echo -e "$i\t0\tfree"
 	done > /tmp/gwip_init_$interface
 	p2ptbl merge $gwiptbl /tmp/gwip_init_$interface
-	rm /tmp/gwip-init_$interface
+	rm /tmp/gwip_init_$interface
 fi
 
