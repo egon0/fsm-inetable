@@ -1,0 +1,6 @@
+#!/bin/sh
+logger -t fsm drone.leave
+. ../common.sh
+
+logger -t "Releasing IPv4 address.."
+ifdown $(uci -q get network.$interface.meshwan_iface

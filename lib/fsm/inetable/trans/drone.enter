@@ -1,0 +1,7 @@
+#!/bin/sh
+logger -t fsm drone.enter
+. ../common.sh
+batctl -m $(uci get network.$interface.batman_iface) gw client
+
+logger -t "Getting IPv4 address from a queen.."
+ifup $(uci -q get network.$interface.meshwan_iface)
