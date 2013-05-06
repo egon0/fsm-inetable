@@ -63,8 +63,3 @@ do
 	iptables -I FORWARD -i $mesh_iface -d 172.16.0.0/12 -j DROP
 	iptables -I FORWARD -i $mesh_iface -d 10.0.0.0/8 -j DROP
 done
-
-# Always allow traffic to freifunk-rheinland web server, freifunk-rheinland image server and openwrt.org
-iptables -t nat -I prerouting_inet_unsplashed -p tcp -d 78.47.165.13 -j ACCEPT
-iptables -t nat -I prerouting_inet_unsplashed -p tcp -d 5.9.112.157 -j ACCEPT
-iptables -t nat -I prerouting_inet_unsplashed -p tcp -d 78.24.191.177 -j ACCEPT
