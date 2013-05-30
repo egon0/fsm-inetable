@@ -68,5 +68,6 @@ iptables -t nat -A prerouting_inet_unsplashed -i $real_iface -p udp --dport 53 -
 iptables -t nat -I prerouting_inet_unsplashed -d 78.47.165.13 -j ACCEPT
 iptables -t nat -I prerouting_inet_unsplashed -d 5.9.112.157 -j ACCEPT
 iptables -t nat -I prerouting_inet_unsplashed -d 78.24.191.177 -j ACCEPT
+iptables -t nat -I prerouting_inet_unsplashed -d 144.76.72.180 -j ACCEPT
 # TODO: discard any other UDP traffic
 
