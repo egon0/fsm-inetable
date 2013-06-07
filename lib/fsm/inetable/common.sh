@@ -1,4 +1,7 @@
 #Netifd version by CyrusFox alias lcb01
+
+uci get system.@system[0].hostname | alfred -s 64
+
 SO=$1
 SN=$2
 interface=$3
@@ -16,6 +19,11 @@ we_own_our_ip () {
 current_oct3 () {
 	local CurrentOct3=$(ifconfig $(get_iface) | egrep -o 'inet addr:[0-9.]*'|cut -f3 -d.)
 	echo $CurrentOct3
+}
+
+current_ip4 () {
+	local CurrentIP4=$(ifconfig $(get_iface) | egrep -o 'inet addr:[0-9.]*' | sed 's/inet addr://')
+	echo $CurrentIP4
 }
 
 get_iface () {
