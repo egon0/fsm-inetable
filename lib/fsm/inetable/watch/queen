@@ -17,6 +17,7 @@ fi
 
 if test_connectivity internet; then
 	logger -t fsm "Interface $interface: Node is online"
+    current_ip4 | alfred -s 65 > /dev/null 2> /dev/null
     echo queen
     exit
 fi
