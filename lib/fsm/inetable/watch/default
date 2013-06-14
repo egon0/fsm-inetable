@@ -13,3 +13,4 @@ else
     logger -t fsm "Interface $interface: Cloud is offline"
     echo robinson
 fi
+uci get system.@system[0].hostname | alfred -s 64
