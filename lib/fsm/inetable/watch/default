@@ -6,6 +6,8 @@ if test_connectivity internet; then
     echo queen
 elif cloud_is_online; then
     logger -t fsm "Interface $interface: Cloud is online"
+    brmesh_mac=$(ifconfig br-mesh | head -1 | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}')
+    echo $brmesh_mac | alfred -s 100
     echo drone
 else
     logger -t fsm "Interface $interface: Cloud is offline"
