@@ -10,3 +10,6 @@ mesh_add_ipv6
 
 # Restarting HBBP to make sure it runs correctly
 /etc/init.d/hbbp restart
+
+# Start alfred in slave mode
+/usr/sbin/alfred -i br-mesh -b bat0
