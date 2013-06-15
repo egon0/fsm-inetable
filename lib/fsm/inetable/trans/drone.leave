@@ -4,3 +4,7 @@ logger -t fsm drone.leave
 
 logger -t fsm "Releasing IPv4 address.."
 ifdown $(uci -q get network.$interface.meshwan_iface
+
+iptables -D FORWARD -i br-lan -o br-mesh -j ACCEPT
+iptables -D FORWARD -i br-mesh -o br-lan -j ACCEPT
+iptables -t nat -D POSTROUTING -o br-mesh -j MASQUERADE
