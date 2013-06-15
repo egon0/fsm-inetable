@@ -47,8 +47,10 @@ real_iface=$(get_iface)
 p2ptbl update $gwiptbl $oct3 "queen\t$NodeId" $(get_iface)
 
 # activate alfred master mode
-uci set alfred.alfred.mode=master
-/etc/init.d/alfred restart
+
+alfred_pid=$(pgrep alfred)
+kill $alfred_pid
+/usr/sbin/alfred -i br-mesh -m -b bat0
 
 # send current ip to alfred
 current_ip4 | alfred -s 65 > /dev/null 2> /dev/null
