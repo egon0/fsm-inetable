@@ -5,3 +5,7 @@ batctl -m $(uci get network.$interface.batman_iface) gw client
 
 logger -t fsm "Getting IPv4 address from a queen.."
 ifup $(uci -q get network.$interface.meshwan_iface)
+
+iptables -I FORWARD -i br-lan -o br-mesh -j ACCEPT
+iptables -I FORWARD -i br-mesh -o br-lan -j ACCEPT
+iptables -t nat -A POSTROUTING -o br-mesh -j MASQUERADE
