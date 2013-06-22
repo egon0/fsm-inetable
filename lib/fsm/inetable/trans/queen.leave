@@ -22,6 +22,12 @@ for line in $n2npids; do
  kill $line
 done;
 
+# stop exit-vpn if running
+if [ -e /var/run/openvpn-exitvpn.pid ]; then
+    opid=$(cat /var/run/openvpn-exitvpn.pid)
+    kill $opid
+fi
+
 # disable DHCP
 mesh_remove_dhcp
 /etc/init.d/dnsmasq restart

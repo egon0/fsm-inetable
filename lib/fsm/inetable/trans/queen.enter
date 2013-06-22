@@ -2,6 +2,11 @@
 logger -t fsm queen.enter
 . ../common.sh
 
+## start exit vpn if /etc/openvpn/exitvpn.conf exists
+if [ -e /etc/openvpn/exitvpn.conf ]
+    then /usr/sbin/openvpn --syslog openvpn[exitvpn] --writepid /var/run/openvpn-exitvpn.pid --config /etc/openvpn/exitvpn.conf --daemon
+fi
+
 ## setup gateway IPv4
 # determine gw IP from p2ptable
 getoct () {
