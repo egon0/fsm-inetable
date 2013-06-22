@@ -16,6 +16,12 @@ if we_own_our_ip; then
     p2ptbl update $gwiptbl $CurrentOct3 free $(get_iface)
 fi
 
+# stop n2n
+n2npids=$(pgrep edge)
+for line in $n2npids; do 
+ kill $line
+done;
+
 # disable DHCP
 mesh_remove_dhcp
 /etc/init.d/dnsmasq restart

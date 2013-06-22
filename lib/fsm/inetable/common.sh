@@ -1,3 +1,5 @@
+. /etc/functions.sh
+
 #Netifd version by CyrusFox alias lcb01
 SO=$1
 SN=$2
@@ -107,4 +109,33 @@ mesh_remove_dhcp() {
 	sed \
     -e "/$interface settings/d" \
     -i "/tmp/dnsmasq.conf"
+}
+
+loadn2n () {
+    startn2n () {
+        local cfg="$1"
+        config_get supernode "$cfg" 'supernode'
+        config_get port "$cfg" 'port'
+        config_get community "$cfg" 'community'
+        config_get key "$cfg" 'key'
+        config_get_bool route "$cfg" 'route' '0'
+        [ "$route" = "1" ] && args='-r'
+        config_get devname "$cfg" devname
+
+        # bat0 MAC auslesen
+        node_mac=$(batctl o | head -1 | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}')
+
+        /usr/sbin/edge -f $args -a 169.254.0.1 \
+                -d $devname -c $community -k $key \
+                -m ${node_mac} -l ${supernode}:${port} 2> /dev/null > /dev/null
+                                      
+        # die IP beseitigen                                      
+        ifconfig $devname 0.0.0.0
+                                                                                 
+        # B.A.T.M.A.N. Bescheid sagen                                                          
+        batctl if add $devname
+    }
+
+    config_load "n2n"
+    config_foreach startn2n edge
 }
