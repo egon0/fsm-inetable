@@ -132,8 +132,8 @@ loadn2n () {
         # die IP beseitigen                                      
         ifconfig $devname 0.0.0.0
                                                                                  
-        # B.A.T.M.A.N. Bescheid sagen                                                          
-        batctl if add $devname
+        # B.A.T.M.A.N. Bescheid sagen
+        batctl -m $(uci get network.$interface.batman_iface) if add $devname
     }
 
     config_load "n2n"
