@@ -26,6 +26,11 @@ done;
 if [ -e /var/run/openvpn-exitvpn.pid ]; then
     opid=$(cat /var/run/openvpn-exitvpn.pid)
     kill $opid
+    iptables -D FORWARD -i br-mesh -o tunff -j ACCEPT
+    iptables -D FORWARD -i tunff -o br-mesh -j ACCEPT
+    iptables -t nat -D POSTROUTING -o tunff -j MASQUERADE
+    iptables -D INPUT -i tunff -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    iptables -D INPUT -i tunff -j REJECT
 fi
 
 # disable DHCP

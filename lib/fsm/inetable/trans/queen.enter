@@ -5,6 +5,11 @@ logger -t fsm queen.enter
 ## start exit vpn if /etc/openvpn/exitvpn.conf exists
 if [ -e /etc/openvpn/exitvpn.conf ]
     then /usr/sbin/openvpn --syslog openvpn[exitvpn] --writepid /var/run/openvpn-exitvpn.pid --config /etc/openvpn/exitvpn.conf --daemon
+    iptables -I FORWARD -i br-mesh -o tunff -j ACCEPT
+    iptables -I FORWARD -i tunff -o br-mesh -j ACCEPT
+    iptables -t nat -A POSTROUTING -o tunff -j MASQUERADE
+    iptables -A INPUT -i tunff -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    iptables -A INPUT -i tunff -j REJECT
 fi
 
 ## setup gateway IPv4
