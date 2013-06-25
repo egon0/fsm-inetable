@@ -12,6 +12,9 @@ if [ -e /etc/openvpn/exitvpn.conf ]
     iptables -A INPUT -i tunff -j REJECT
 fi
 
+# enable masquerading on wan
+iptables -t nat -A POSTROUTING -o $(uci get network.wan.ifname) -j MASQUERADE
+
 ## setup gateway IPv4
 # determine gw IP from p2ptable
 getoct () {
