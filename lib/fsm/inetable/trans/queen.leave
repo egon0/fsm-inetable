@@ -33,6 +33,9 @@ if [ -e /var/run/openvpn-exitvpn.pid ]; then
     iptables -D INPUT -i tunff -j REJECT
 fi
 
+# disable masquerading on wan
+iptables -t nat -D POSTROUTING -o $(uci get network.wan.ifname) -j MASQUERADE
+
 # disable DHCP
 mesh_remove_dhcp
 /etc/init.d/dnsmasq restart
