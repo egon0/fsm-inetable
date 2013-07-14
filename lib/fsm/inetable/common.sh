@@ -92,7 +92,6 @@ mesh_set_dhcp() {
 	local start_ip=$1
 	local end_ip=$2
 	local netmask=$3
-	local 
 	# Remove old DHCP settings
 	sed \
     -e "/$interface settings/d" \
@@ -101,6 +100,23 @@ mesh_set_dhcp() {
 	echo "dhcp-range=$(get_iface),$start_ip,$end_ip,$netmask,$DHCPLeaseTime # $interface settings" \
 		>> "/tmp/dnsmasq.conf"
 }
+
+mesh_set_dhcp_fake() {
+	local start_ip=$1
+	local end_ip=$2
+	local netmask=$3
+	local fakeip=$4
+	# Remove old DHCP settings
+	sed \
+    -e "/$interface settings/d" \
+    -i "/tmp/dnsmasq.conf"
+	# Write new settings
+	echo "dhcp-range=$(get_iface),$start_ip,$end_ip,$netmask,$DHCPLeaseTime # $interface settings" \
+		>> "/tmp/dnsmasq.conf"
+	echo "address=/#/$fakeip # $interface settings" \
+		>> "/tmp/dnsmasq.conf"
+}
+
 
 mesh_remove_dhcp() {
 	# Remove old DHCP settings
