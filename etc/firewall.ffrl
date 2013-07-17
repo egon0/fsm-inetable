@@ -16,6 +16,9 @@ wan_iface=$(get_iface wan)
 # detailed below
 iptables -t nat -F PREROUTING
 
+# Add masquerading for wan interface
+iptables -t nat -A postrouting_rule -o wan -j MASQUERADE
+
 # create chains for the robinson fake net (depending on the inetable
 # state, this is used to route all TCP traffic to a local web server
 # or relay all traffic to the intended target):
