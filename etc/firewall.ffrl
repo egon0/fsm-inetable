@@ -19,6 +19,13 @@ iptables -t nat -F PREROUTING
 # Add masquerading for wan interface
 iptables -t nat -A postrouting_rule -o wan -j MASQUERADE
 
+# Add masquerading for br-mesh if packets come from lan
+iptables -t nat -A postrouting_rule -o br-mesh -s 192.168.210.0/24 -j MASQUERADE
+
+# Allow routing between mesh & lan (with NAT)
+iptables -I FORWARD -i br-mesh -o br-lan -j ACCEPT
+iptables -I FORWARD -i br-lan -o br-mesh -j ACCEPT
+
 # create chains for the robinson fake net (depending on the inetable
 # state, this is used to route all TCP traffic to a local web server
 # or relay all traffic to the intended target):
