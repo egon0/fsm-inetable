@@ -28,9 +28,9 @@ mesh_add_ipv4 $randip 255.0.0.0
 oct123=$(echo $randip | cut -f1,2,3 -d '.' )
 dhcp_start="$oct123".2""
 dhcp_end="$oct123".254""
-mesh_set_dhcp $dhcp_start $dhcp_end 255.0.0.0
+fakeip=$(ipcalc.sh $net_fake 1 0 | grep ^START | cut -f2 -d=)
+mesh_set_dhcp_fake $dhcp_start $dhcp_end 255.0.0.0 $fakeip
 
-/etc/init.d/dnsmasq restart
 /etc/init.d/dnsmasq restart
 
 # disable batman-adv-mangling with DHCP packets
