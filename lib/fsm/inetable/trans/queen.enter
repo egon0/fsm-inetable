@@ -61,7 +61,7 @@ splash_sync
 
 # redirect tcp to local httpd, dns to local ns
 iptables -t nat -F prerouting_inet_unsplashed
-iptables -t nat -A prerouting_inet_unsplashed -i $real_iface -p tcp            -j DNAT --to $gwip:81
+iptables -t nat -A prerouting_inet_unsplashed -i $real_iface -p tcp --dport 89 -j DNAT --to $gwip:81
 iptables -t nat -A prerouting_inet_unsplashed -i $real_iface -p udp --dport 53 -j DNAT --to $gwip:53
 
 # Always allow traffic to freifunk-rheinland web server, freifunk-rheinland image server and openwrt.org
